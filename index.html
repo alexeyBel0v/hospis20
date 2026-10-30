@@ -13,11 +13,36 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%230f6e7c'/%3E%3Cpath d='M9 33h11l5-11 7 20 5-13h18' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Если приложение не запустилось — показать причину вместо пустого экрана.
+      (function () {
+        function show(reason) {
+          if (window.__HOSPIS_STARTED__) return;
+          var root = document.getElementById('root');
+          if (!root) return;
+          root.innerHTML =
+            '<div style="padding:32px 20px;font:16px/1.45 system-ui,sans-serif;color:#13222b;background:#f2f5f4;min-height:100vh">' +
+            '<p style="font-size:20px;font-weight:700;margin:0 0 10px">Hospis OS не запустился</p>' +
+            '<p style="margin:0 0 16px;color:#66757e">Пришлите этот экран разработчику.</p>' +
+            '<p style="margin:0 0 20px;padding:12px;border-radius:12px;background:#fff;word-break:break-word;font-size:14px">' +
+            String(reason).replace(/</g, '&lt;') + '<br><br>' + navigator.userAgent.replace(/</g, '&lt;') + '</p>' +
+            '<button onclick="location.reload()" style="width:100%;min-height:48px;border:0;border-radius:14px;background:#0f6e7c;color:#fff;font:600 16px system-ui">Перезагрузить</button></div>';
+        }
+        window.addEventListener('error', function (e) {
+          var t = e && e.target;
+          // Ошибки загрузки картинок и шрифтов не важны — только файлы самого приложения.
+          if (t && t !== window && !(t.tagName === 'SCRIPT' && /assets\//.test(t.src || ''))) return;
+          show((e && e.message) || 'Файл приложения не загрузился: ' + (t && t.src));
+        }, true);
+        window.addEventListener('unhandledrejection', function (e) { show((e && e.reason && e.reason.message) || e.reason); });
+        setTimeout(function () { show('Приложение не ответило за 12 секунд'); }, 12000);
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

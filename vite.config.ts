@@ -70,4 +70,6 @@ const freshLoader = (): Plugin => ({
 export default defineConfig({
   base: './',
   plugins: [react(), freshLoader()],
+  // Старые iPhone и Android: код собирается так, чтобы работал и в устаревших браузерах Telegram.
+  build: { target: ['es2019', 'safari13', 'chrome80'], cssTarget: ['safari13', 'chrome80'] },
 });

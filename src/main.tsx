@@ -11,6 +11,7 @@ initTelegram();
 const root = document.getElementById('root');
 if (!root) throw new Error('Нет #root');
 
+(window as unknown as { __HOSPIS_STARTED__?: boolean }).__HOSPIS_STARTED__ = true;
 createRoot(root).render(
   <StrictMode>
     <Gate>
