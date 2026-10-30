@@ -72,12 +72,15 @@ const mapPatient = (data: AppData, id: string, change: (p: Patient) => Patient):
 
 export const addPatient = (data: AppData, input: PatientInput, id: string = newId()): { data: AppData; id: string } => {
   const stamp = now();
-  const patient: Patient = { ...clean(input), id, hospital: null, archived: false, createdAt: stamp, updatedAt: stamp };
+  const patient: Patient = { ...clean(input), id, hospital: null, geo: null, archived: false, createdAt: stamp, updatedAt: stamp };
   return { data: { ...data, patients: [...data.patients, patient] }, id };
 };
 
 export const updatePatient = (data: AppData, id: string, input: PatientInput): AppData =>
   mapPatient(data, id, (p) => ({ ...p, ...clean(input) }));
+
+/** Запомнить, где на карте адрес пациента. */
+export const setGeo = (data: AppData, id: string, geo: Patient['geo']): AppData => mapPatient(data, id, (p) => ({ ...p, geo }));
 
 export const setArchived = (data: AppData, id: string, archived: boolean): AppData => mapPatient(data, id, (p) => ({ ...p, archived }));
 

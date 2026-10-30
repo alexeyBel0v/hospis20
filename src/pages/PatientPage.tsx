@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { IsoDate, Patient } from '../types.ts';
 import { useData } from '../hooks/useData.tsx';
-import { addressDetails, routeUrl } from '../lib/address.ts';
+import { addressDetails, placeUrl } from '../lib/address.ts';
 import { cn } from '../lib/cn.ts';
 import { addDays, formatDayShort, formatDots, formatRelative, isIsoDate } from '../lib/dates.ts';
 import { catheterLabel } from '../lib/format.ts';
@@ -125,10 +125,13 @@ export const PatientPage = ({ patientId, today, onBack, onEdit }: Props) => {
       {(patient.address || patient.phones.length > 0) && (
         <section className="group">
           {patient.address && (
-            <button type="button" className="line" onClick={() => openLink(routeUrl([patient.address]))}>
+            <button type="button" className="line" onClick={() => openLink(placeUrl(patient.address))}>
               <span className="line__text">
                 <span>{patient.address}</span>
                 {details && <span className="line__sub">{details}</span>}
+                {patient.geo && patient.geo.for === patient.address && patient.geo.lat === null && (
+                  <span className="line__warn">Не найден на карте — проверьте город, улицу и дом</span>
+                )}
               </span>
               <span className="round-btn">
                 <NavIcon width={18} height={18} />

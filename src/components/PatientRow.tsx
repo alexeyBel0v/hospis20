@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { IsoDate, Patient } from '../types.ts';
-import { addressDetails, routeUrl } from '../lib/address.ts';
+import { addressDetails, placeUrl } from '../lib/address.ts';
 import { cn } from '../lib/cn.ts';
 import { formatDayShort, formatRelative } from '../lib/dates.ts';
 import { catheterLabel, policyLine, shortName } from '../lib/format.ts';
@@ -26,7 +26,7 @@ const Peek = ({ patient, today, onOpen }: { patient: Patient; today: IsoDate; on
       <p className="peek__name">{patient.fullName}</p>
 
       {patient.address && (
-        <button type="button" className="peek__row" onClick={() => openLink(routeUrl([patient.address]))}>
+        <button type="button" className="peek__row" onClick={() => openLink(placeUrl(patient.address))}>
           <span className="peek__text">
             <span>{patient.address}</span>
             {details && <span className="peek__sub">{details}</span>}

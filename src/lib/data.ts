@@ -74,6 +74,13 @@ const parseWounds = (value: unknown): string => {
 const parseHospital = (value: unknown): Patient['hospital'] =>
   isRec(value) && isIsoDate(value.since) ? { since: value.since, note: str(value, 'note') } : null;
 
+const parseGeo = (value: unknown): Patient['geo'] => {
+  if (!isRec(value) || typeof value.for !== 'string') return null;
+  const lat = num(value, 'lat');
+  const lon = num(value, 'lon');
+  return { for: value.for, lat: lat !== null && lon !== null ? lat : null, lon: lat !== null && lon !== null ? lon : null };
+};
+
 const parsePatient = (value: unknown, index: number, today: IsoDate): Patient => {
   if (!isRec(value)) throw new DataError(`Пациент №${index + 1}: неверный формат`);
   const fullName = str(value, 'fullName').trim();
@@ -97,6 +104,7 @@ const parsePatient = (value: unknown, index: number, today: IsoDate): Patient =>
     allergy: parseAllergy(value.allergy),
     wounds: parseWounds(value.wounds),
     hospital: parseHospital(value.hospital),
+    geo: parseGeo(value.geo),
     archived: value.archived === true,
     createdAt: str(value, 'createdAt'),
     updatedAt: str(value, 'updatedAt'),

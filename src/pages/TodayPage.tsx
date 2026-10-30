@@ -113,7 +113,7 @@ export const TodayPage = ({ today, onOpenPatient, onAddPatient, onOpenSettings, 
             <PlusIcon width={20} height={20} />
             Добавить пациента
           </button>
-          {data.patients.length === 0 && (
+          {import.meta.env.DEV && data.patients.length === 0 && (
             <button type="button" className="btn btn--soft btn--block" onClick={() => replaceAll(createDemoData(today))}>
               Посмотреть на примере
             </button>

@@ -35,9 +35,24 @@ export const addressDetails = (p: Pick<Patient, 'apartment' | 'entrance' | 'floo
     .filter(Boolean)
     .join(', ');
 
-/** Маршрут на машине от текущего места. */
-export const routeUrl = (addresses: string[], fromMe = true): string => {
-  const points = addresses.map((a) => a.trim()).filter(Boolean);
-  const rtext = (fromMe ? ['', ...points] : points).map(encodeURIComponent).join('~');
+/** Один адрес: открывается карточка дома в Яндекс Картах, там кнопка «Маршрут». Работает и в приложении, и в браузере. */
+export const placeUrl = (address: string): string => `https://yandex.ru/maps/?text=${encodeURIComponent(address.trim())}`;
+
+type RoutePoint = Pick<Patient, 'address' | 'geo'>;
+
+/** Точка для Яндекса: координаты, если адрес найден на карте, иначе сам адрес текстом. */
+const pointOf = (p: RoutePoint): string =>
+  p.geo && p.geo.for === p.address && p.geo.lat !== null && p.geo.lon !== null ? `${p.geo.lat.toFixed(6)},${p.geo.lon.toFixed(6)}` : p.address.trim();
+
+/**
+ * Маршрут на машине через все точки по порядку.
+ * Начало: моё место по координатам телефона; если их нет — пустая точка (Яндекс подставит «Моё местоположение»).
+ */
+export const routeUrl = (patients: RoutePoint[], origin: { lat: number; lon: number } | null, fromMe = true): string => {
+  const points = patients.filter((p) => p.address.trim()).map(pointOf);
+  const start = fromMe ? [origin ? `${origin.lat.toFixed(6)},${origin.lon.toFixed(6)}` : ''] : [];
+  const rtext = [...start, ...points].map((p) => encodeURIComponent(p).replace(/%2C/g, ',')).join('~');
   return `https://yandex.ru/maps/?rtext=${rtext}&rtt=auto`;
 };
+
+export const hasGeo = (p: RoutePoint): boolean => Boolean(p.geo && p.geo.for === p.address && p.geo.lat !== null);

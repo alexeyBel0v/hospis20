@@ -8,6 +8,9 @@ export type Schedule = { kind: 'every'; days: number; start: IsoDate } | { kind:
 
 export type CatheterType = 'none' | 'urinary' | 'cysto' | 'other';
 
+/** Точка на карте для адреса `for`. lat = null — адрес не нашёлся. */
+export type Geo = { for: string; lat: number | null; lon: number | null };
+
 export type Patient = {
   id: string;
   fullName: string;
@@ -29,12 +32,14 @@ export type Patient = {
   wounds: string;
   /** В больнице: визиты на паузе. */
   hospital: { since: IsoDate; note: string } | null;
+  /** Координаты адреса — для маршрута через несколько точек. */
+  geo: Geo | null;
   archived: boolean;
   createdAt: string;
   updatedAt: string;
 };
 
-export type PatientInput = Omit<Patient, 'id' | 'hospital' | 'archived' | 'createdAt' | 'updatedAt'>;
+export type PatientInput = Omit<Patient, 'id' | 'hospital' | 'geo' | 'archived' | 'createdAt' | 'updatedAt'>;
 
 export type ShiftMark = 'work' | 'off';
 

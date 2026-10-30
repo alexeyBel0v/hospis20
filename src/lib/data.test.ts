@@ -61,7 +61,11 @@ describe('мелочи', () => {
     expect(splitApartment('Москва, ул. Ленина, 15, кв. 4')).toEqual({ address: 'Москва, ул. Ленина, 15', apartment: '4' });
     expect(addressWarning('ул. Ленина 15')).toContain('город');
     expect(addressWarning('Москва, ул. Ленина, 15')).toBe('');
-    expect(routeUrl(['А', 'Б'])).toBe('https://yandex.ru/maps/?rtext=~%D0%90~%D0%91&rtt=auto');
+    const a = { address: 'Москва, ул. Ленина, 15', geo: { for: 'Москва, ул. Ленина, 15', lat: 55.7, lon: 37.6 } };
+    const b = { address: 'Б', geo: null };
+    expect(routeUrl([a, b], null)).toBe('https://yandex.ru/maps/?rtext=~55.700000,37.600000~%D0%91&rtt=auto');
+    expect(routeUrl([a], { lat: 55.1, lon: 37.2 })).toBe('https://yandex.ru/maps/?rtext=55.100000,37.200000~55.700000,37.600000&rtt=auto');
+    expect(routeUrl([{ ...a, address: 'Москва, ул. Ленина, 17' }], null, false)).toBe('https://yandex.ru/maps/?rtext=%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0,%20%D1%83%D0%BB.%20%D0%9B%D0%B5%D0%BD%D0%B8%D0%BD%D0%B0,%2017&rtt=auto');
   });
   it('Фамилия И. О.', () => {
     expect(shortName('Петров Николай Сергеевич')).toBe('Петров Н. С.');

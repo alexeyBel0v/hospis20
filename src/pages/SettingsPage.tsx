@@ -125,7 +125,7 @@ export const SettingsPage = ({ today, onBack }: { today: IsoDate; onBack: () => 
         <button type="button" className="btn btn--ghost btn--block" onClick={() => setImportOpen(true)}>
           Восстановить из копии
         </button>
-        {data.patients.length === 0 && (
+        {import.meta.env.DEV && data.patients.length === 0 && (
           <button type="button" className="btn btn--ghost btn--block" onClick={() => replaceAll(createDemoData(today))}>
             Загрузить пример
           </button>

@@ -8,7 +8,7 @@ import { EMPTY_SHIFTS, isWorkDay, presetOf, SHIFT_PRESETS, toggleDay } from '../
 import { haptic } from '../lib/telegram.ts';
 import { ChevronLeft, ChevronRight, GearIcon } from '../components/icons.tsx';
 import { PatientRow } from '../components/PatientRow.tsx';
-import { Field, Sheet, Toggle } from '../components/ui.tsx';
+import { Field, Sheet } from '../components/ui.tsx';
 
 const WEEK = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -131,9 +131,12 @@ export const SchedulePage = ({ today, onOpenPatient }: { today: IsoDate; onOpenP
                 key={date}
                 type="button"
                 className={cn('cal__day', isWorkDay(shifts, date) && 'cal__day--work', date === today && 'cal__day--today', date === selected && 'cal__day--selected')}
+                aria-pressed={isWorkDay(shifts, date)}
                 onClick={() => {
+                  haptic();
                   setSelected(date);
                   setOpenId(null);
+                  update((d) => ({ ...d, shifts: toggleDay(d.shifts, date) }));
                 }}
               >
                 <span>{Number(date.slice(8))}</span>
@@ -145,27 +148,15 @@ export const SchedulePage = ({ today, onOpenPatient }: { today: IsoDate; onOpenP
           )}
         </div>
         <p className="cal__legend">
-          <span className="legend-swatch" /> смена <span className="legend-num">2</span> сколько визитов
+          <span className="legend-swatch" /> смена — нажмите на дату, чтобы отметить или снять
         </p>
       </section>
 
       <section className="day-block">
-        <div className="row-between">
-          <h2 className="day-block__title">
-            {capitalize(formatWeekday(selected))}, {formatDayMonth(selected)}
-          </h2>
-          <label className="mini-toggle">
-            <span>Смена</span>
-            <Toggle
-              checked={workSelected}
-              label="Смена в этот день"
-              onChange={() => {
-                haptic();
-                update((d) => ({ ...d, shifts: toggleDay(d.shifts, selected) }));
-              }}
-            />
-          </label>
-        </div>
+        <h2 className="day-block__title">
+          {capitalize(formatWeekday(selected))}, {formatDayMonth(selected)}
+          <span>{workSelected ? 'смена' : 'выходной'}</span>
+        </h2>
         {dayPatients.length ? (
           <div className="group">
             {dayPatients.map((p) => (

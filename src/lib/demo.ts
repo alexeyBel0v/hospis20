@@ -15,6 +15,7 @@ export const createDemoData = (today: IsoDate): AppData => {
     allergy: '',
     wounds: '',
     hospital: null,
+    geo: null,
     archived: false,
     createdAt: stamp,
     updatedAt: stamp,

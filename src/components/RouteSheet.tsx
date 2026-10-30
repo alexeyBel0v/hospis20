@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Patient } from '../types.ts';
-import { addressDetails, routeUrl } from '../lib/address.ts';
+import { hasGeo, routeUrl } from '../lib/address.ts';
 import { cn } from '../lib/cn.ts';
 import { shortName } from '../lib/format.ts';
 import { openLink } from '../lib/telegram.ts';
@@ -12,6 +12,17 @@ export const RouteSheet = ({ patients, onClose }: { patients: Patient[]; onClose
   const [order, setOrder] = useState(() => withAddress.map((p) => p.id));
   const [skipped, setSkipped] = useState<Set<string>>(() => new Set());
   const [fromMe, setFromMe] = useState(true);
+  const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
+
+  // Своё место берём с телефона заранее: тогда маршрут начнётся точно отсюда.
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setOrigin({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
+      () => setOrigin(null),
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+    );
+  }, []);
   const byId = new Map(withAddress.map((p) => [p.id, p]));
   const ordered = order.map((id) => byId.get(id)).filter((p): p is Patient => Boolean(p));
   const included = ordered.filter((p) => !skipped.has(p.id));
@@ -47,7 +58,8 @@ export const RouteSheet = ({ patients, onClose }: { patients: Patient[]; onClose
               </button>
               <span className="route-row__text">
                 <span className="route-row__name">{shortName(p.fullName)}</span>
-                <span className="route-row__sub">{[p.address, addressDetails({ ...p, entrance: '', floor: '', intercom: '' })].filter(Boolean).join(', ')}</span>
+                <span className="route-row__sub">{p.address}</span>
+                {!hasGeo(p) && <span className="route-row__warn">{p.geo ? 'не найден на карте' : 'ищу на карте…'}</span>}
               </span>
               <button type="button" className="icon-btn icon-btn--ghost" aria-label="Выше" disabled={index === 0} onClick={() => move(index, -1)}>
                 ↑
@@ -60,7 +72,8 @@ export const RouteSheet = ({ patients, onClose }: { patients: Patient[]; onClose
         })}
       </div>
       {patients.length > withAddress.length && <p className="hint">Без адреса: {patients.length - withAddress.length}</p>}
-      <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!included.length} onClick={() => openLink(routeUrl(included.map((p) => p.address), fromMe))}>
+      {included.some((p) => p.geo?.for === p.address && p.geo.lat === null) && <p className="hint">Адреса, не найденные на карте, Яндекс может не понять. Проверьте их написание в карточке.</p>}
+      <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!included.length} onClick={() => openLink(routeUrl(included, origin, fromMe))}>
         Открыть в Яндекс Картах
       </button>
     </Sheet>

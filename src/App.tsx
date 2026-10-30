@@ -3,6 +3,7 @@ import { useContent } from './hooks/useContent.ts';
 import { useData } from './hooks/useData.tsx';
 import { useBack } from './hooks/useBack.ts';
 import { useToday } from './hooks/useToday.ts';
+import { useGeocoder } from './hooks/useGeocoder.ts';
 import { fetchSiteVersion, isNewer, reloadApp } from './lib/update.ts';
 import { BottomNav, type Tab } from './components/BottomNav.tsx';
 import { NewsPage } from './pages/NewsPage.tsx';
@@ -23,6 +24,7 @@ export const App = () => {
   const [stack, setStack] = useState<Screen[]>([]);
   const [update, setUpdate] = useState<string | null>(null);
   const top = stack[stack.length - 1];
+  useGeocoder();
 
   const push = (screen: Screen) => {
     setStack((s) => [...s, screen]);

@@ -1597,3 +1597,15 @@ h2 {
     stroke-dashoffset: 0;
   }
 }
+
+.route-row__warn,
+.line__warn {
+  font-size: 12px;
+  font-weight: 600;
+  color: #a26a00;
+}
+
+:root[data-theme='dark'] .route-row__warn,
+:root[data-theme='dark'] .line__warn {
+  color: #e2b04a;
+}
