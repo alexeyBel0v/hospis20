@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { AppData } from '../types.ts';
 import { createEmptyData } from '../lib/data.ts';
-import { loadData, loadLocal, saveData, type SaveResult } from '../lib/storage.ts';
+import { loadData, loadLocal, pullCloud, saveData, type SaveResult } from '../lib/storage.ts';
 import { setTheme } from '../lib/telegram.ts';
 
 type Ctx = {
@@ -34,13 +34,41 @@ export const DataProvider = ({ children }: { children: ReactNode }) => {
     };
   }, []);
 
+  // Вернулись в приложение — подтягиваем то, что добавили на другом устройстве.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible') return;
+      const base = latest.current;
+      void pullCloud(base).then((merged) => {
+        if (!merged || latest.current !== base) return;
+        if (JSON.stringify(merged) === JSON.stringify(base)) return;
+        latest.current = merged;
+        setData(merged);
+      });
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    const timer = window.setInterval(onVisible, 60_000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.clearInterval(timer);
+    };
+  }, []);
+
   useEffect(() => setTheme(data.settings.theme), [data.settings.theme]);
 
   const persist = useCallback((next: AppData) => {
     window.clearTimeout(timer.current);
     setSaveState('saving');
     timer.current = window.setTimeout(() => {
-      void saveData(latest.current).then(setSaveState);
+      const sent = latest.current;
+      void saveData(sent).then(({ result, data: saved }) => {
+        setSaveState(result);
+        // Пока сохраняли, пришли пациенты с другого устройства — показываем их.
+        if (saved !== sent && latest.current === sent) {
+          latest.current = saved;
+          setData(saved);
+        }
+      });
     }, 500);
     latest.current = next;
   }, []);

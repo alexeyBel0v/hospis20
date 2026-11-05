@@ -16,14 +16,15 @@ import { ChevronLeft } from '../components/icons.tsx';
 import { Segmented, Sheet } from '../components/ui.tsx';
 
 const ImportSheet = ({ onClose }: { onClose: () => void }) => {
-  const { replaceAll } = useData();
+  const { data: current, replaceAll } = useData();
   const [text, setText] = useState('');
   const [error, setError] = useState('');
   const apply = async (raw: string) => {
     try {
       const data = parseDataJson(raw);
       if (!(await confirmAction(`Заменить текущие данные?\n\nВ копии пациентов: ${data.patients.length}.`))) return;
-      replaceAll(data);
+      const kept = new Set(data.patients.map((p) => p.id));
+      replaceAll({ ...data, deleted: [...data.deleted, ...current.patients.filter((p) => !kept.has(p.id)).map((p) => p.id)] });
       haptic('success');
       onClose();
     } catch (e) {
@@ -153,7 +154,8 @@ export const SettingsPage = ({ today, onBack }: { today: IsoDate; onBack: () => 
   const wipe = async () => {
     if (!(await confirmAction('Удалить всех пациентов и смены?\n\nВосстановить можно только из резервной копии.'))) return;
     await clearAll();
-    replaceAll(createEmptyData());
+    // Список удалённых — чтобы другие устройства тоже их убрали, а не вернули при синхронизации.
+    replaceAll({ ...createEmptyData(), deleted: data.patients.map((p) => p.id) });
   };
 
   return (

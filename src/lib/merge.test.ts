@@ -26,3 +26,19 @@ describe('добавить пациентов из файла', () => {
     expect(fresh.data.patients).toHaveLength(2);
   });
 });
+
+import { mergeData } from './sync.ts';
+import { removePatient } from './patients.ts';
+
+describe('синхронизация телефона и компьютера', () => {
+  it('пациенты с обоих устройств сохраняются, удалённые не воскресают', () => {
+    const base = createEmptyData();
+    const pc = addPatient({ ...base, savedAt: '2026-11-05T10:00' }, { ...emptyInput('2026-11-05'), fullName: 'С компьютера' }).data;
+    const phone = addPatient({ ...base, savedAt: '2026-11-05T11:00' }, { ...emptyInput('2026-11-05'), fullName: 'С телефона' }).data;
+    const merged = mergeData(phone, pc);
+    expect(merged.patients.map((p) => p.fullName).sort()).toEqual(['С компьютера', 'С телефона']);
+    const id = pc.patients[0]?.id ?? '';
+    const afterDelete = removePatient(merged, id);
+    expect(mergeData(pc, afterDelete).patients.map((p) => p.fullName)).toEqual(['С телефона']);
+  });
+});

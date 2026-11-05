@@ -67,5 +67,7 @@ export type AppData = {
   patients: Patient[];
   shifts: Shifts;
   settings: Settings;
+  /** id удалённых пациентов — чтобы они не «воскресали» при синхронизации телефона и компьютера. */
+  deleted: string[];
   savedAt: string;
 };

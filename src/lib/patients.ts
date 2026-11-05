@@ -95,7 +95,11 @@ export const discharge = (data: AppData, id: string, from: IsoDate): AppData =>
     schedule: p.schedule.kind === 'every' ? { ...p.schedule, start: from } : p.schedule,
   }));
 
-export const removePatient = (data: AppData, id: string): AppData => ({ ...data, patients: data.patients.filter((p) => p.id !== id) });
+export const removePatient = (data: AppData, id: string): AppData => ({
+  ...data,
+  patients: data.patients.filter((p) => p.id !== id),
+  deleted: [...data.deleted.filter((d) => d !== id), id].slice(-1000),
+});
 
 const digitsOnly = (text: string) => text.replace(/\D/g, '');
 

@@ -14,6 +14,7 @@ export const createEmptyData = (): AppData => ({
   patients: [],
   shifts: { ...EMPTY_SHIFTS, overrides: {} },
   settings: { ...DEFAULT_SETTINGS, seenNews: [] },
+  deleted: [],
   savedAt: '',
 });
 
@@ -149,6 +150,7 @@ export const parseData = (value: unknown, today: IsoDate = todayIso()): AppData 
     patients: source.patients.map((p, i) => parsePatient(p, i, today)),
     shifts: parseShifts(source.shifts),
     settings: parseSettings(source.settings),
+    deleted: Array.isArray(source.deleted) ? source.deleted.filter((v): v is string => typeof v === 'string').slice(-1000) : [],
     savedAt: str(source, 'savedAt'),
   };
 };

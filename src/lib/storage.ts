@@ -1,5 +1,6 @@
 import type { AppData } from '../types.ts';
 import { createEmptyData, parseData } from './data.ts';
+import { mergeData } from './sync.ts';
 import { cloudStorage } from './telegram.ts';
 
 /**
@@ -81,18 +82,26 @@ const saveCloud = async (text: string, savedAt: string) => {
 
 export type SaveResult = 'saved' | 'local-only';
 
-export const saveData = async (data: AppData): Promise<SaveResult> => {
+/**
+ * Сохранить. Перед записью в облако смотрим, не записало ли туда что-то другое устройство:
+ * если да — сначала склеиваем, чтобы не затереть пациентов, добавленных на компьютере или другом телефоне.
+ * Возвращает, что в итоге сохранено (может содержать пациентов с другого устройства).
+ */
+export const saveData = async (data: AppData): Promise<{ result: SaveResult; data: AppData }> => {
   saveLocal(data);
-  if (!cloudStorage()) return 'local-only';
+  if (!cloudStorage()) return { result: 'local-only', data };
   try {
-    await saveCloud(JSON.stringify(data), data.savedAt);
-    return 'saved';
+    const cloud = await loadCloud().catch(() => null);
+    const merged = cloud ? mergeData(data, cloud) : data;
+    saveLocal(merged);
+    await saveCloud(JSON.stringify(merged), merged.savedAt);
+    return { result: 'saved', data: merged };
   } catch {
-    return 'local-only';
+    return { result: 'local-only', data };
   }
 };
 
-/** Берём более свежую копию: телефон или облако. */
+/** Загрузка: копия с телефона и из облака склеиваются. */
 export const loadData = async (): Promise<AppData> => {
   const local = loadLocal();
   let cloud: AppData | null = null;
@@ -101,11 +110,19 @@ export const loadData = async (): Promise<AppData> => {
   } catch {
     cloud = null;
   }
-  if (cloud && (!local || cloud.savedAt > local.savedAt)) {
-    saveLocal(cloud);
-    return cloud;
+  const result = local && cloud ? mergeData(local, cloud) : (cloud ?? local ?? createEmptyData());
+  saveLocal(result);
+  return result;
+};
+
+/** Подтянуть изменения с других устройств (когда возвращаемся в приложение). */
+export const pullCloud = async (current: AppData): Promise<AppData | null> => {
+  try {
+    const cloud = await loadCloud();
+    return cloud ? mergeData(current, cloud) : null;
+  } catch {
+    return null;
   }
-  return local ?? cloud ?? createEmptyData();
 };
 
 export const clearAll = async () => {
