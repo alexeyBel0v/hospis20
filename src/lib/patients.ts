@@ -115,3 +115,29 @@ export const findDuplicateByPolicy = (patients: Patient[], policy: string, excep
   if (key.length < 16) return undefined;
   return patients.find((p) => p.id !== exceptId && digitsOnly(p.policy) === key);
 };
+
+const nameKey = (name: string) => name.trim().toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ');
+
+/** Тот же человек: совпал полис (16 цифр), а если полиса нет — ФИО. */
+export const findSame = (patients: Patient[], candidate: Patient): Patient | undefined => {
+  const policy = digitsOnly(candidate.policy);
+  if (policy.length === 16) return patients.find((p) => digitsOnly(p.policy) === policy);
+  return patients.find((p) => nameKey(p.fullName) === nameKey(candidate.fullName));
+};
+
+export type MergeResult = { data: AppData; added: Patient[]; skipped: Patient[] };
+
+/** Добавить пациентов к своим: новые — добавляются, уже существующие — пропускаются, ничего не затирается. */
+export const mergePatients = (data: AppData, incoming: Patient[]): MergeResult => {
+  const added: Patient[] = [];
+  const skipped: Patient[] = [];
+  const stamp = now();
+  for (const candidate of incoming) {
+    if (findSame([...data.patients, ...added], candidate)) {
+      skipped.push(candidate);
+      continue;
+    }
+    added.push({ ...candidate, id: newId(), geo: null, archived: false, createdAt: stamp, updatedAt: stamp });
+  }
+  return { data: { ...data, patients: [...data.patients, ...added] }, added, skipped };
+};

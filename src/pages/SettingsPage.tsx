@@ -3,7 +3,10 @@ import type { IsoDate, ThemeChoice } from '../types.ts';
 import { APP_VERSION } from '../config.ts';
 import { useData } from '../hooks/useData.tsx';
 import { copyText } from '../lib/clipboard.ts';
-import { createEmptyData, DataError, parseDataJson } from '../lib/data.ts';
+import { createEmptyData, DataError, parseDataJson, parseIncomingPatients } from '../lib/data.ts';
+import { mergePatients } from '../lib/patients.ts';
+import { shortName } from '../lib/format.ts';
+import type { Patient } from '../types.ts';
 import { createDemoData } from '../lib/demo.ts';
 import { forgetUnlock } from '../lib/password.ts';
 import { clearAll } from '../lib/storage.ts';
@@ -42,9 +45,85 @@ const ImportSheet = ({ onClose }: { onClose: () => void }) => {
   );
 };
 
+/** Добавить пациентов к своим (из списка, который подготовил Claude по фото): совпавшие пропускаются. */
+const AddSheet = ({ onClose }: { onClose: () => void }) => {
+  const { data, update } = useData();
+  const [text, setText] = useState('');
+  const [error, setError] = useState('');
+  const [preview, setPreview] = useState<{ added: Patient[]; skipped: Patient[]; incoming: Patient[] } | null>(null);
+  const [done, setDone] = useState('');
+
+  const check = (raw: string) => {
+    setError('');
+    setDone('');
+    try {
+      const incoming = parseIncomingPatients(raw);
+      const { added, skipped } = mergePatients(data, incoming);
+      setPreview({ added, skipped, incoming });
+    } catch (e) {
+      setPreview(null);
+      setError(e instanceof DataError ? e.message : 'Не получилось прочитать список');
+    }
+  };
+
+  const apply = () => {
+    if (!preview) return;
+    update((d) => mergePatients(d, preview.incoming).data);
+    haptic('success');
+    setDone(`Добавлено: ${preview.added.length}`);
+    setPreview(null);
+    setText('');
+  };
+
+  return (
+    <Sheet title="Добавить пациентов" onClose={onClose}>
+      <p className="hint">Вставьте список или выберите файл. Пациенты добавятся к вашим, уже имеющиеся пропустятся.</p>
+      <textarea
+        className="input textarea"
+        rows={5}
+        value={text}
+        placeholder="Вставьте текст списка"
+        aria-label="Текст списка"
+        onChange={(e) => {
+          setText(e.target.value);
+          if (e.target.value.trim()) check(e.target.value);
+          else setPreview(null);
+        }}
+      />
+      <label className="btn btn--soft btn--block">
+        Выбрать файл
+        <input type="file" accept=".json,application/json,text/plain" hidden onChange={(e) => void e.target.files?.[0]?.text().then((t) => { setText(t); check(t); })} />
+      </label>
+      {error && <p className="field__error">{error}</p>}
+      {preview && (
+        <div className="group">
+          {preview.added.map((p) => (
+            <div key={p.id} className="line line--static">
+              <span className="line__text">
+                <span>{shortName(p.fullName)}</span>
+                <span className="line__sub">{[p.policy, p.address].filter(Boolean).join(', ') || 'без полиса и адреса'}</span>
+              </span>
+            </div>
+          ))}
+          {preview.skipped.length > 0 && (
+            <div className="line line--static">
+              <span className="line__sub">Уже есть, пропущу: {preview.skipped.map((p) => shortName(p.fullName)).join(', ')}</span>
+            </div>
+          )}
+        </div>
+      )}
+      {done && <p className="hint hint--center">{done}</p>}
+      <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!preview?.added.length} onClick={apply}>
+        {preview ? `Добавить ${preview.added.length}` : 'Добавить'}
+      </button>
+    </Sheet>
+  );
+};
+
 export const SettingsPage = ({ today, onBack }: { today: IsoDate; onBack: () => void }) => {
   const { data, update, replaceAll, saveState } = useData();
   const [importOpen, setImportOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const [note, setNote] = useState('');
   const user = telegramUser();
 
@@ -113,6 +192,13 @@ export const SettingsPage = ({ today, onBack }: { today: IsoDate; onBack: () => 
       </section>
 
       <section className="block">
+        <h2 className="block__title">Пациенты списком</h2>
+        <button type="button" className="btn btn--soft btn--block" onClick={() => setAddOpen(true)}>
+          Добавить пациентов из списка
+        </button>
+      </section>
+
+      <section className="block">
         <h2 className="block__title">Резервная копия</h2>
         <div className="grid-2">
           <button type="button" className="btn btn--soft" onClick={() => void copyBackup()}>
@@ -157,6 +243,7 @@ export const SettingsPage = ({ today, onBack }: { today: IsoDate; onBack: () => 
       </section>
 
       {importOpen && <ImportSheet onClose={() => setImportOpen(false)} />}
+      {addOpen && <AddSheet onClose={() => setAddOpen(false)} />}
     </main>
   );
 };

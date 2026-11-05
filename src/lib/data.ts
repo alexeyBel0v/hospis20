@@ -162,3 +162,17 @@ export const parseDataJson = (text: string): AppData => {
   }
   return parseData(value);
 };
+
+/** Список пациентов из текста: полная копия, { patients: [...] } или просто [ ... ]. */
+export const parseIncomingPatients = (text: string): Patient[] => {
+  let value: unknown;
+  try {
+    value = JSON.parse(text.trim());
+  } catch {
+    throw new DataError('Текст не похож на список пациентов: проверьте, что скопирован целиком');
+  }
+  const wrapped = Array.isArray(value) ? { patients: value } : value;
+  const patients = parseData(wrapped).patients;
+  if (!patients.length) throw new DataError('В тексте нет пациентов');
+  return patients;
+};
