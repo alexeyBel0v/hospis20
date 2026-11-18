@@ -5,7 +5,8 @@ import { cn } from '../lib/cn.ts';
 import { formatDayShort, formatRelative } from '../lib/dates.ts';
 import { catheterLabel, policyLine, shortName } from '../lib/format.ts';
 import { nextVisitDate, scheduleLabel } from '../lib/schedule.ts';
-import { callPhone, haptic, openLink } from '../lib/telegram.ts';
+import { haptic, openLink } from '../lib/telegram.ts';
+import { phoneHref } from '../lib/masks.ts';
 import { ChevronDown, ChevronRight, NavIcon, PhoneIcon } from './icons.tsx';
 
 export const Flags = ({ patient }: { patient: Patient }) => (
@@ -38,7 +39,7 @@ const Peek = ({ patient, today, onOpen }: { patient: Patient; today: IsoDate; on
       )}
 
       {patient.phones.map((phone, i) => (
-        <button key={`${phone.number}-${i}`} type="button" className="peek__row" onClick={() => callPhone(phone.number)}>
+        <a key={`${phone.number}-${i}`} className="peek__row" href={phoneHref(phone.number)} onClick={() => haptic('tap')}>
           <span className="peek__text">
             <span className="num">{phone.number}</span>
             {phone.who && <span className="peek__sub">{phone.who}</span>}
@@ -46,7 +47,7 @@ const Peek = ({ patient, today, onOpen }: { patient: Patient; today: IsoDate; on
           <span className="round-btn" aria-hidden="true">
             <PhoneIcon width={18} height={18} />
           </span>
-        </button>
+        </a>
       ))}
 
       {facts.length > 0 && <p className="peek__facts">{facts.join('. ')}</p>}

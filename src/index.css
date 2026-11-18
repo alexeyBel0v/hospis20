@@ -1609,3 +1609,7 @@ h2 {
 :root[data-theme='dark'] .line__warn {
   color: #e2b04a;
 }
+
+/* Звонок — настоящая ссылка tel:, иначе Telegram не открывает набор номера */
+a.line, a.peek__row, a.contact { text-decoration: none; color: inherit; -webkit-tap-highlight-color: transparent; }
+a.contact[aria-disabled="true"] { pointer-events: none; }

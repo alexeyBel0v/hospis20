@@ -7,7 +7,8 @@ import { addDays, formatDayShort, formatDots, formatRelative, isIsoDate } from '
 import { catheterLabel } from '../lib/format.ts';
 import { discharge, removePatient, setArchived, setHospital } from '../lib/patients.ts';
 import { scheduleLabel, upcomingVisits } from '../lib/schedule.ts';
-import { callPhone, confirmAction, haptic, openLink } from '../lib/telegram.ts';
+import { confirmAction, haptic, openLink } from '../lib/telegram.ts';
+import { phoneHref } from '../lib/masks.ts';
 import { ChevronLeft, HospitalIcon, NavIcon, PencilIcon, PhoneIcon } from '../components/icons.tsx';
 import { Sheet } from '../components/ui.tsx';
 
@@ -139,7 +140,7 @@ export const PatientPage = ({ patientId, today, onBack, onEdit }: Props) => {
             </button>
           )}
           {patient.phones.map((phone, i) => (
-            <button key={`${phone.number}-${i}`} type="button" className="line" onClick={() => callPhone(phone.number)}>
+            <a key={`${phone.number}-${i}`} className="line" href={phoneHref(phone.number)} onClick={() => haptic('tap')}>
               <span className="line__text">
                 <span className="num">{phone.number}</span>
                 {phone.who && <span className="line__sub">{phone.who}</span>}
@@ -147,7 +148,7 @@ export const PatientPage = ({ patientId, today, onBack, onEdit }: Props) => {
               <span className="round-btn">
                 <PhoneIcon width={18} height={18} />
               </span>
-            </button>
+            </a>
           ))}
         </section>
       )}

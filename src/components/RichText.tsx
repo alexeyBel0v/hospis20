@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { parseBlocks } from '../lib/content.ts';
-import { callPhone } from '../lib/telegram.ts';
+import { phoneHref } from '../lib/masks.ts';
 import { PhoneIcon } from './icons.tsx';
 
 /** **жирный**, [заполнить] — подсветка, ссылки http — кнопки. */
@@ -33,7 +33,7 @@ export const RichText = ({ body }: { body: string }) => (
       }
       const callable = /\d{5,}/.test(block.phone.replace(/\D/g, ''));
       return (
-        <button key={i} type="button" className="contact" disabled={!callable} onClick={() => callable && callPhone(block.phone)}>
+        <a key={i} className="contact" href={callable ? phoneHref(block.phone) : undefined} aria-disabled={!callable}>
           <span className="contact__text">
             <span>{block.name}</span>
             <span className="contact__sub">{[block.role, block.phone].filter(Boolean).join(', ')}</span>
@@ -43,7 +43,7 @@ export const RichText = ({ body }: { body: string }) => (
               <PhoneIcon width={18} height={18} />
             </span>
           )}
-        </button>
+        </a>
       );
     })}
   </div>

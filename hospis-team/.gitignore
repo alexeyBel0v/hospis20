@@ -1,0 +1,4 @@
+node_modules
+dist
+hospis-data.json
+.vercel

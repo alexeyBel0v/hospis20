@@ -1,0 +1,166 @@
+import type { AppData, IsoDate, Patient, PatientInput } from '../types.ts';
+import { normalizeAddress } from './address.ts';
+import { formatPhone, formatPolicy } from './masks.ts';
+
+/** «Важно знать» — одна короткая строка, чтобы не превращалась в историю болезни. */
+export const HEADS_MAX = 80;
+
+export const newId = (): string =>
+  typeof crypto !== 'undefined' && 'randomUUID' in crypto
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+
+export const emptyInput = (today: IsoDate): PatientInput => ({
+  fullName: '',
+  policy: '',
+  address: '',
+  apartment: '',
+  entrance: '',
+  floor: '',
+  intercom: '',
+  phones: [{ number: '', who: '' }],
+  comment: '',
+  heads: '',
+  schedule: { kind: 'every', days: 3, start: today },
+  catheter: { type: 'none', size: null },
+  oxygen: false,
+  allergy: '',
+  wounds: '',
+  doctorId: null,
+  nurseId: null,
+});
+
+const clean = (input: PatientInput): PatientInput => ({
+  ...input,
+  fullName: input.fullName.trim().replace(/\s+/g, ' '),
+  policy: formatPolicy(input.policy),
+  address: normalizeAddress(input.address),
+  apartment: input.apartment.trim(),
+  entrance: input.entrance.trim(),
+  floor: input.floor.trim(),
+  intercom: input.intercom.trim(),
+  phones: input.phones
+    .map((phone) => ({ number: formatPhone(phone.number), who: phone.who.trim() }))
+    .filter((phone) => phone.number.length > 2),
+  comment: input.comment.trim(),
+  heads: input.heads.trim().replace(/\s+/g, ' ').slice(0, HEADS_MAX),
+  schedule:
+    input.schedule.kind === 'dates'
+      ? { kind: 'dates', dates: [...new Set(input.schedule.dates)].sort() }
+      : { ...input.schedule, days: Math.max(1, Math.round(input.schedule.days)) },
+  catheter: input.catheter.type === 'none' ? { type: 'none', size: null } : input.catheter,
+  allergy: input.allergy.trim(),
+  wounds: input.wounds.trim(),
+});
+
+export const toInput = (p: Patient): PatientInput => ({
+  fullName: p.fullName,
+  policy: p.policy,
+  address: p.address,
+  apartment: p.apartment,
+  entrance: p.entrance,
+  floor: p.floor,
+  intercom: p.intercom,
+  phones: p.phones.length ? p.phones.map((phone) => ({ ...phone })) : [{ number: '', who: '' }],
+  comment: p.comment,
+  heads: p.heads,
+  schedule: p.schedule.kind === 'dates' ? { kind: 'dates', dates: [...p.schedule.dates] } : { ...p.schedule },
+  catheter: { ...p.catheter },
+  oxygen: p.oxygen,
+  allergy: p.allergy,
+  wounds: p.wounds,
+  doctorId: p.doctorId,
+  nurseId: p.nurseId,
+});
+
+const now = () => new Date().toISOString();
+
+const mapPatient = (data: AppData, id: string, change: (p: Patient) => Patient): AppData => ({
+  ...data,
+  patients: data.patients.map((p) => (p.id === id ? { ...change(p), updatedAt: now() } : p)),
+});
+
+export const addPatient = (data: AppData, input: PatientInput, id: string = newId()): { data: AppData; id: string } => {
+  const stamp = now();
+  const patient: Patient = { ...clean(input), id, hospital: null, geo: null, archived: false, createdAt: stamp, updatedAt: stamp };
+  return { data: { ...data, patients: [...data.patients, patient] }, id };
+};
+
+export const updatePatient = (data: AppData, id: string, input: PatientInput): AppData =>
+  mapPatient(data, id, (p) => ({ ...p, ...clean(input) }));
+
+/** Запомнить, где на карте адрес пациента. */
+export const setGeo = (data: AppData, id: string, geo: Patient['geo']): AppData => mapPatient(data, id, (p) => ({ ...p, geo }));
+
+export const setArchived = (data: AppData, id: string, archived: boolean): AppData => mapPatient(data, id, (p) => ({ ...p, archived }));
+
+export const setHospital = (data: AppData, id: string, hospital: Patient['hospital']): AppData =>
+  mapPatient(data, id, (p) => ({ ...p, hospital }));
+
+/** Выписали: снимаем паузу, график «каждые N дней» продолжается с выбранной даты. */
+export const discharge = (data: AppData, id: string, from: IsoDate): AppData =>
+  mapPatient(data, id, (p) => ({
+    ...p,
+    hospital: null,
+    schedule: p.schedule.kind === 'every' ? { ...p.schedule, start: from } : p.schedule,
+  }));
+
+export const removePatient = (data: AppData, id: string): AppData => ({
+  ...data,
+  patients: data.patients.filter((p) => p.id !== id),
+  deleted: [...data.deleted.filter((d) => d !== id), id].slice(-1000),
+});
+
+const digitsOnly = (text: string) => text.replace(/\D/g, '');
+
+/** Поиск по ФИО, полису, телефону, адресу. */
+export const matches = (p: Patient, query: string): boolean => {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  const text = [p.fullName, p.address, p.comment].join(' ').toLowerCase();
+  if (q.split(/\s+/).every((word) => text.includes(word))) return true;
+  const qDigits = digitsOnly(q);
+  if (qDigits.length < 3) return false;
+  return [p.policy, ...p.phones.map((phone) => phone.number)].some((value) => digitsOnly(value).includes(qDigits));
+};
+
+export const findDuplicateByPolicy = (patients: Patient[], policy: string, exceptId?: string): Patient | undefined => {
+  const key = digitsOnly(policy);
+  if (key.length < 16) return undefined;
+  return patients.find((p) => p.id !== exceptId && digitsOnly(p.policy) === key);
+};
+
+const nameKey = (name: string) => name.trim().toLowerCase().replace(/ё/g, 'е').replace(/\s+/g, ' ');
+
+/** Тот же человек: совпал полис (16 цифр), а если полиса нет — ФИО. */
+export const findSame = (patients: Patient[], candidate: Patient): Patient | undefined => {
+  const policy = digitsOnly(candidate.policy);
+  if (policy.length === 16) return patients.find((p) => digitsOnly(p.policy) === policy);
+  return patients.find((p) => nameKey(p.fullName) === nameKey(candidate.fullName));
+};
+
+export type MergeResult = { data: AppData; added: Patient[]; skipped: Patient[] };
+
+/** Добавить пациентов к своим: новые — добавляются, уже существующие — пропускаются, ничего не затирается. */
+export const mergePatients = (data: AppData, incoming: Patient[]): MergeResult => {
+  const added: Patient[] = [];
+  const skipped: Patient[] = [];
+  const stamp = now();
+  for (const candidate of incoming) {
+    if (findSame([...data.patients, ...added], candidate)) {
+      skipped.push(candidate);
+      continue;
+    }
+    added.push({ ...candidate, id: newId(), geo: null, archived: false, createdAt: stamp, updatedAt: stamp });
+  }
+  return { data: { ...data, patients: [...data.patients, ...added] }, added, skipped };
+};
+
+/** Отметить «был» / снять отметку за день. */
+export const toggleVisit = (data: AppData, patientId: string, date: IsoDate, userId: string): AppData => {
+  const mine = data.visits.find((v) => v.patientId === patientId && v.date === date && v.userId === userId);
+  if (mine) {
+    return { ...data, visits: data.visits.filter((v) => v.id !== mine.id), visitsDeleted: [...data.visitsDeleted, mine.id] };
+  }
+  return { ...data, visits: [...data.visits, { id: newId(), patientId, date, userId, at: now(), note: '' }] };
+};
