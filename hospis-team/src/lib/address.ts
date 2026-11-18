@@ -46,12 +46,11 @@ const pointOf = (p: RoutePoint): string =>
 
 /**
  * Маршрут на машине через все точки по порядку.
- * Начало: моё место по координатам телефона; если их нет — пустая точка (Яндекс подставит «Моё местоположение»).
+ * start — начало: координаты «lat,lon», адрес текстом, или '' — Яндекс подставит «Моё местоположение».
  */
-export const routeUrl = (patients: RoutePoint[], origin: { lat: number; lon: number } | null, fromMe = true): string => {
+export const routeUrl = (patients: RoutePoint[], start: string): string => {
   const points = patients.filter((p) => p.address.trim()).map(pointOf);
-  const start = fromMe ? [origin ? `${origin.lat.toFixed(6)},${origin.lon.toFixed(6)}` : ''] : [];
-  const rtext = [...start, ...points].map((p) => encodeURIComponent(p).replace(/%2C/g, ',')).join('~');
+  const rtext = [start, ...points].map((p) => encodeURIComponent(p).replace(/%2C/g, ',')).join('~');
   return `https://yandex.ru/maps/?rtext=${rtext}&rtt=auto`;
 };
 

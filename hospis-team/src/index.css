@@ -82,7 +82,6 @@
 html,
 body {
   margin: 0;
-  background: var(--bg);
   color: var(--ink);
   font-family: 'Onest', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   font-size: 16px;
@@ -1894,10 +1893,6 @@ select.input {
 
 /* ================== Фон, стекло, заставка ================== */
 
-body {
-  background: var(--bg);
-}
-
 /* Фото отделения + вуаль: фиксированный слой, не дёргается при прокрутке в Telegram на iPhone */
 body::before {
   content: '';
@@ -2632,4 +2627,68 @@ body::after {
   height: 3px;
   border-radius: 0 0 3px 3px;
   background: linear-gradient(90deg, var(--accent), var(--accent-2));
+}
+
+/* Фон рисуется на html, а body прозрачный — иначе фото видно только там, где кончается страница */
+html {
+  min-height: 100%;
+  background: var(--bg);
+}
+
+body {
+  min-height: 100vh;
+  background: transparent;
+}
+
+/* «Требуют внимания» — пропущенные отметки, чтобы пациент не потерялся */
+.card--alert {
+  border-color: rgba(210, 69, 58, 0.25);
+  background: linear-gradient(180deg, rgba(253, 231, 228, 0.92), var(--surface));
+}
+
+:root[data-theme='dark'] .card--alert {
+  background: linear-gradient(180deg, rgba(255, 123, 110, 0.14), var(--surface));
+}
+
+.card__meta--alert {
+  color: var(--alert);
+}
+
+.attn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+  background: none;
+  color: var(--ink);
+  text-align: left;
+}
+
+.attn__text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  text-align: left;
+}
+
+.attn__text span {
+  color: var(--alert);
+  font-size: 13px;
+}
+
+.attn__btn {
+  flex: none;
+  min-height: 36px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--work-soft);
+  color: var(--work);
+  font-weight: 700;
 }

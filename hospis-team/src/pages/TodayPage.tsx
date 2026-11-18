@@ -8,6 +8,9 @@ import { patientsOn } from '../lib/schedule.ts';
 import { hasShifts, isWorkDay, nextWorkDay } from '../lib/shifts.ts';
 import { ChevronRight, PlusIcon, RouteIcon } from '../components/icons.tsx';
 import { PatientRow } from '../components/PatientRow.tsx';
+import { toggleVisit } from '../lib/patients.ts';
+import { haptic } from '../lib/telegram.ts';
+import { shortName } from '../lib/format.ts';
 import { RouteSheet } from '../components/RouteSheet.tsx';
 import { Segmented } from '../components/ui.tsx';
 
@@ -127,7 +130,7 @@ const lastWeek = (patients: Patient[], visits: Visit[], today: IsoDate) =>
   });
 
 export const TodayPage = ({ today, onOpenPatient, onAddPatient, onOpenSettings, onOpenSchedule, onQuick }: Props) => {
-  const { data, me, users, isManager } = useData();
+  const { data, me, users, isManager, update } = useData();
   const { news } = useContent();
   const [who, setWho] = useState<string>('all');
   const [view, setView] = useState<View>('today');
@@ -160,6 +163,18 @@ export const TodayPage = ({ today, onOpenPatient, onAddPatient, onOpenSettings, 
   const weekPlanned = trend.reduce((s, d) => s + d.planned, 0);
   const percent = weekPlanned ? Math.round((weekVisits / weekPlanned) * 100) : 0;
   const latest = news[0];
+
+  // Главное, ради чего приложение: визит по графику за последние 3 дня, который никто не отметил.
+  const attention = useMemo(() => {
+    const seen = new Set(data.visits.map((v) => `${v.patientId}|${v.date}`));
+    return [1, 2, 3].flatMap((back) => {
+      const date = addDays(today, -back);
+      return patientsOn(mine, date)
+        .filter((p) => !seen.has(`${p.id}|${date}`))
+        .map((patient) => ({ patient, date }));
+    });
+  }, [mine, data.visits, today]);
+  const unassigned = isManager ? data.patients.filter((p) => !p.archived && !p.nurseId).length : 0;
 
   const { shifts } = data;
   const shiftsSet = hasShifts(shifts);
@@ -278,6 +293,43 @@ export const TodayPage = ({ today, onOpenPatient, onAddPatient, onOpenSettings, 
             </button>
           ))}
         </div>
+      )}
+
+      {(attention.length > 0 || unassigned > 0) && (
+        <section className="card card--alert">
+          <div className="card__head">
+            <h2 className="card__title">Требуют внимания</h2>
+            <span className="card__meta card__meta--alert">{attention.length || ''}</span>
+          </div>
+          {unassigned > 0 && (
+            <button type="button" className="attn" onClick={() => onQuick('patients')}>
+              <span className="attn__text">
+                <b>Без медсестры: {unassigned}</b>
+                <span>Пациент не закреплён — его некому посещать</span>
+              </span>
+            </button>
+          )}
+          {attention.slice(0, 6).map(({ patient, date }) => (
+            <div key={`${patient.id}${date}`} className="attn">
+              <button type="button" className="attn__text" onClick={() => onOpenPatient(patient.id)}>
+                <b>{shortName(patient.fullName)}</b>
+                <span>Визит {formatRelative(date, today)} не отмечен</span>
+              </button>
+              <button
+                type="button"
+                className="attn__btn"
+                onClick={() => {
+                  haptic('success');
+                  update((d) => toggleVisit(d, patient.id, date, me.id));
+                }}
+              >
+                Был
+              </button>
+            </div>
+          ))}
+          {attention.length > 6 && <p className="hint">И ещё {attention.length - 6}</p>}
+          <p className="hint">Если визит был — отметьте. Если не был — сообщите старшей медсестре.</p>
+        </section>
       )}
 
       {!hasPatients ? (

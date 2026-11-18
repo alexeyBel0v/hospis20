@@ -4,25 +4,54 @@ import { hasGeo, routeUrl } from '../lib/address.ts';
 import { cn } from '../lib/cn.ts';
 import { shortName } from '../lib/format.ts';
 import { openLink } from '../lib/telegram.ts';
-import { Sheet, Toggle } from './ui.tsx';
+import { Segmented, Sheet } from './ui.tsx';
+import { BASE } from '../config.ts';
+import { geocode } from '../lib/geocode.ts';
+
+const BASE_KEY = 'hospis_base_geo';
+
+/** Координаты базы ищем один раз и запоминаем на телефоне. */
+const loadBase = (): string | null => {
+  try {
+    return window.localStorage.getItem(BASE_KEY);
+  } catch {
+    return null;
+  }
+};
 
 /** Маршрут на машине по адресам: порядок — стрелками, номер — пропустить точку. */
 export const RouteSheet = ({ patients, onClose }: { patients: Patient[]; onClose: () => void }) => {
   const withAddress = patients.filter((p) => p.address.trim());
   const [order, setOrder] = useState(() => withAddress.map((p) => p.id));
   const [skipped, setSkipped] = useState<Set<string>>(() => new Set());
-  const [fromMe, setFromMe] = useState(true);
+  const [from, setFrom] = useState<'base' | 'me'>('base');
   const [origin, setOrigin] = useState<{ lat: number; lon: number } | null>(null);
+  const [base, setBase] = useState<string | null>(loadBase);
+
+  useEffect(() => {
+    if (base) return;
+    void geocode(BASE.address).then((geo) => {
+      if (!geo || geo.lat === null || geo.lon === null) return;
+      const point = `${geo.lat.toFixed(6)},${geo.lon.toFixed(6)}`;
+      setBase(point);
+      try {
+        window.localStorage.setItem(BASE_KEY, point);
+      } catch {
+        // нет доступа к памяти
+      }
+    });
+  }, [base]);
 
   // Своё место берём с телефона заранее: тогда маршрут начнётся точно отсюда.
   useEffect(() => {
-    if (!navigator.geolocation) return;
+    if (from !== 'me' || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (pos) => setOrigin({ lat: pos.coords.latitude, lon: pos.coords.longitude }),
       () => setOrigin(null),
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
     );
-  }, []);
+  }, [from]);
+  const start = from === 'base' ? (base ?? BASE.address) : origin ? `${origin.lat.toFixed(6)},${origin.lon.toFixed(6)}` : '';
   const byId = new Map(withAddress.map((p) => [p.id, p]));
   const ordered = order.map((id) => byId.get(id)).filter((p): p is Patient => Boolean(p));
   const included = ordered.filter((p) => !skipped.has(p.id));
@@ -44,10 +73,16 @@ export const RouteSheet = ({ patients, onClose }: { patients: Patient[]; onClose
 
   return (
     <Sheet title="Маршрут" onClose={onClose}>
-      <div className="row-between">
-        <span>От моего места</span>
-        <Toggle checked={fromMe} label="От моего места" onChange={setFromMe} />
-      </div>
+      <Segmented<'base' | 'me'>
+        label="Откуда"
+        value={from}
+        onChange={setFrom}
+        options={[
+          { value: 'base', label: 'От базы' },
+          { value: 'me', label: 'От меня' },
+        ]}
+      />
+      <p className="hint">{from === 'base' ? `Начало: ${BASE.label}` : 'Начало: где вы сейчас'}</p>
       <div className="group">
         {ordered.map((p, index) => {
           const off = skipped.has(p.id);
@@ -73,7 +108,7 @@ export const RouteSheet = ({ patients, onClose }: { patients: Patient[]; onClose
       </div>
       {patients.length > withAddress.length && <p className="hint">Без адреса: {patients.length - withAddress.length}</p>}
       {included.some((p) => p.geo?.for === p.address && p.geo.lat === null) && <p className="hint">Адреса, не найденные на карте, Яндекс может не понять. Проверьте их написание в карточке.</p>}
-      <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!included.length} onClick={() => openLink(routeUrl(included, origin, fromMe))}>
+      <button type="button" className="btn btn--primary btn--lg btn--block" disabled={!included.length} onClick={() => openLink(routeUrl(included, start))}>
         Открыть в Яндекс Картах
       </button>
     </Sheet>

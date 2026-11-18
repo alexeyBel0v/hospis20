@@ -14,8 +14,8 @@ const WEEK = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 const ShiftSetup = ({ shifts, today, onSave, onClose }: { shifts: Shifts; today: IsoDate; onSave: (s: Shifts) => void; onClose: () => void }) => {
-  const [work, setWork] = useState(shifts.work || 1);
-  const [off, setOff] = useState(shifts.work ? shifts.off : 3);
+  const [work, setWork] = useState(shifts.work || 2);
+  const [off, setOff] = useState(shifts.work ? shifts.off : 2);
   const [start, setStart] = useState(shifts.start || today);
   const [hours, setHours] = useState(shifts.hours || '08:00–20:00');
   const active = presetOf({ ...shifts, work, off });

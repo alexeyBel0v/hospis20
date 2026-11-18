@@ -4,8 +4,8 @@ import { addDays, daysBetween } from './dates.ts';
 export type ShiftPreset = { id: string; label: string; work: number; off: number };
 
 export const SHIFT_PRESETS: ShiftPreset[] = [
-  { id: '1-3', label: 'Сутки через трое', work: 1, off: 3 },
   { id: '2-2', label: '2 через 2', work: 2, off: 2 },
+  { id: '1-3', label: 'Сутки через трое', work: 1, off: 3 },
   { id: '5-2', label: '5/2', work: 5, off: 2 },
   { id: '1-1', label: 'День через день', work: 1, off: 1 },
   { id: '1-2', label: 'Сутки через двое', work: 1, off: 2 },
