@@ -16,7 +16,7 @@ import { Pamphlets } from '../components/Pamphlets.tsx';
 import { WoundSheet } from '../components/WoundSheet.tsx';
 import { roleName, shortName } from '../lib/format.ts';
 
-type Props = { patientId: string; today: IsoDate; onBack: () => void; onEdit: (id: string) => void };
+type Props = { patientId: string; today: IsoDate; onBack: () => void; onEdit: (id: string) => void; onExam: (id: string) => void };
 
 const DateChoice = ({ today, value, onChange, past }: { today: IsoDate; value: IsoDate; onChange: (d: IsoDate) => void; past?: boolean }) => {
   const quick = past ? [0, -1, -2] : [0, 1, 2];
@@ -62,7 +62,7 @@ const HospitalSheet = ({ patient, today, onClose }: { patient: Patient; today: I
   );
 };
 
-export const PatientPage = ({ patientId, today, onBack, onEdit }: Props) => {
+export const PatientPage = ({ patientId, today, onBack, onEdit, onExam }: Props) => {
   const { data, update, users, isManager } = useData();
   const [hospitalOpen, setHospitalOpen] = useState(false);
   const [pamphletsOpen, setPamphletsOpen] = useState(false);
@@ -136,6 +136,14 @@ export const PatientPage = ({ patientId, today, onBack, onEdit }: Props) => {
       )}
 
       {!patient.archived && !patient.hospital && <VisitButton patientId={patient.id} date={today} size="lg" />}
+      <div className="grid-2">
+        <button type="button" className="btn btn--soft" onClick={() => onExam(patient.id)}>
+          Осмотр
+        </button>
+        <button type="button" className="btn btn--soft" onClick={() => setWoundOpen(true)}>
+          Status localis
+        </button>
+      </div>
 
       {(patient.address || patient.phones.length > 0) && (
         <section className="group">
@@ -240,9 +248,6 @@ export const PatientPage = ({ patientId, today, onBack, onEdit }: Props) => {
         )}
         <button type="button" className="btn btn--soft" onClick={() => update((d) => setArchived(d, patient.id, !patient.archived))}>
           {patient.archived ? 'Вернуть из архива' : 'В архив'}
-        </button>
-        <button type="button" className="btn btn--soft" onClick={() => setWoundOpen(true)}>
-          Status localis
         </button>
         <button type="button" className="btn btn--soft" onClick={() => setPamphletsOpen(true)}>
           Памятки для родных

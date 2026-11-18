@@ -11,11 +11,12 @@ import { PatientFormPage } from './pages/PatientFormPage.tsx';
 import { PatientPage } from './pages/PatientPage.tsx';
 import { PatientsPage } from './pages/PatientsPage.tsx';
 import { ReportPage } from './pages/ReportPage.tsx';
+import { ExamPage } from './pages/ExamPage.tsx';
 import { SchedulePage } from './pages/SchedulePage.tsx';
 import { SettingsPage } from './pages/SettingsPage.tsx';
 import { TodayPage } from './pages/TodayPage.tsx';
 
-type Screen = { kind: 'patient'; id: string } | { kind: 'form'; id: string | null } | { kind: 'settings' };
+type Screen = { kind: 'patient'; id: string } | { kind: 'form'; id: string | null } | { kind: 'settings' } | { kind: 'exam'; id: string };
 
 export const App = () => {
   const today = useToday();
@@ -55,7 +56,8 @@ export const App = () => {
   const newsBadge = news.filter((n) => !data.settings.seenNews.includes(n.id)).length;
 
   const screen = () => {
-    if (top?.kind === 'patient') return <PatientPage key={top.id} patientId={top.id} today={today} onBack={back} onEdit={(id) => push({ kind: 'form', id })} />;
+    if (top?.kind === 'patient') return <PatientPage key={top.id} patientId={top.id} today={today} onBack={back} onEdit={(id) => push({ kind: 'form', id })} onExam={(id) => push({ kind: 'exam', id })} />;
+    if (top?.kind === 'exam') return <ExamPage key={top.id} patientId={top.id} today={today} onBack={back} />;
     if (top?.kind === 'form') {
       return (
         <PatientFormPage

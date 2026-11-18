@@ -104,6 +104,44 @@ export const PAMPHLETS = [
     ],
     note: 'Дневник: дата и время — боль от 0 до 10 — что дали — стало ли легче.',
   },
+  {
+    id: 'obezbolivanie',
+    title: 'Обезболивание: как правильно принимать лекарства',
+    lead: 'Боль при тяжёлой болезни можно и нужно снимать. Лекарства работают лучше всего, когда их принимают по часам, а не «когда заболит».',
+    demo: true,
+    sections: [
+      ['Главные правила', [
+        'Принимайте лекарства строго по часам, как назначил врач, даже если сейчас не болит.',
+        'Таблетки «ретард», «пролонгированные», «континус» глотайте целиком: не ломайте, не жуйте, не растворяйте — иначе лекарство выйдет сразу и может быть опасно.',
+        'Не меняйте дозу и не отменяйте лекарство сами. Сильные обезболивающие отменяют только постепенно, по схеме врача.',
+        'Алкоголь нельзя. За руль не садиться.',
+        'Храните лекарства и пластыри (и использованные тоже) так, чтобы их не достали дети.',
+      ]],
+      ['Запор и тошнота — это можно облегчить', [
+        'Сильные обезболивающие почти всегда вызывают запор. Слабительное обычно назначают сразу вместе с ними — спросите врача.',
+        'Тошнота и сонливость чаще бывают в первые дни. Скажите медсестре — подберут лечение.',
+      ]],
+      ['Срочно звоните, если', [
+        'боль 7 из 10 и сильнее, или лекарство перестало помогать;',
+        'человек очень сонливый, его трудно разбудить, дыхание стало редким;',
+        'спутанность, судороги, сильная рвота;',
+        'пластырь отклеился или лекарство закончилось, а новое ещё не выписано.',
+      ]],
+    ],
+    drugs: [
+      ['Трамадол (Трамал ретард)', 'Обезболивающее средней силы.', 'Таблетку ретард — целиком, запить водой, независимо от еды.', 'Может вызывать тошноту, головокружение. Опасно вместе с некоторыми антидепрессантами — скажите врачу, что ещё принимаете.'],
+      ['Морфин (МСТ Континус)', 'Сильное обезболивающее длительного действия.', '2 раза в сутки, каждые 12 часов. Целиком, не разжёвывать.', 'Запор, тошнота и сонливость в начале лечения. Не отменять резко.'],
+      ['Морфин — раствор для приёма внутрь', 'Сильное обезболивающее быстрого действия: при постоянной и при «прорывной» боли.', 'Строго по назначению врача — часто каждые 4 часа. Отмерять точно тем шприцем или мерной ёмкостью, что дали.', 'Тошнота, запор, сонливость. Хранить в тёмном месте не выше 25 °C, недоступно для детей.'],
+      ['Морфин — ампулы для уколов', 'Сильное обезболивающее, когда глотать трудно или нужен быстрый эффект.', 'Колет медсестра или обученный ею родственник, только по назначению врача: под кожу или в мышцу.', 'Если после укола человек очень сонлив и дышит редко — звоните 103. Ампулы, в том числе пустые, хранить и сдавать по правилам, которые объяснит медсестра.'],
+      ['Палексия (тапентадол)', 'Сильное обезболивающее длительного действия.', '2 раза в сутки, примерно каждые 12 часов. Целиком, запить водой, до или после еды.', 'Тошнота, запор, головокружение. Не отменять резко. Осторожно с антидепрессантами.'],
+      ['Таргин (оксикодон + налоксон)', 'Сильное обезболивающее; налоксон в составе уменьшает запор.', 'Обычно утром и вечером в одно и то же время. Целиком, не ломать.', 'Не для внезапной острой боли — для неё врач назначает другое лекарство. Не отменять резко.'],
+      ['Фентанил — пластырь', 'Сильное обезболивающее через кожу.', 'Менять каждые 72 часа, клеить на новое место на сухую кожу туловища или плеча, прижать на 30 секунд.', 'Нельзя греть место пластыря: грелка, горячая ванна, солнце. При температуре — сообщить врачу. Использованный сложить клеем внутрь.'],
+      ['Прегабалин (Лирика)', 'Против жгучей, стреляющей, «нервной» боли.', '2–3 раза в день, независимо от еды.', 'Головокружение и сонливость — осторожно при ходьбе. Отменять постепенно, не меньше недели.'],
+      ['Парацетамол', 'Обезболивающее и жаропонижающее для слабой боли.', 'Строго в той дозе, что назначил врач, с перерывами между приёмами.', 'Превышение дозы опасно для печени. Входит во многие «простудные» средства — не принимайте их вместе.'],
+      ['Лактулоза или сенна', 'Слабительное: предупреждает запор от обезболивающих.', 'Каждый день, как назначил врач, не дожидаясь запора.', 'Если стула нет 3 дня — сообщите медсестре.'],
+    ],
+    note: 'ДЕМО-версия памятки для проверки приложения. Перед выдачей сверьте с назначением врача. Дозу и время приёма вписывает врач или медсестра.',
+  },
 ];
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -125,13 +163,13 @@ const page = (p) => `<!doctype html><html lang="ru"><head><meta charset="utf-8">
 @font-face{font-family:Onest;font-weight:700;src:url(${fontLatin(700)});unicode-range:U+0000-00FF}
 @page{size:A4;margin:12mm 14mm 10mm}
 *{box-sizing:border-box}
-body{margin:0;font-family:Onest,sans-serif;color:#26302b;font-size:10.5pt;line-height:1.4}
-.top{display:flex;align-items:center;gap:10px;color:#2e7a68;font-weight:700;font-size:10pt;margin-bottom:6mm}
+body{margin:0;font-family:Onest,sans-serif;color:#0f2742;font-size:10.5pt;line-height:1.4}
+.top{display:flex;align-items:center;gap:10px;color:#1b6fd6;font-weight:700;font-size:10pt;margin-bottom:6mm}
 .logo{width:26px;height:26px}
 h1{font-size:20pt;line-height:1.15;margin:0 0 3mm;letter-spacing:-.01em}
 .lead{font-size:11.5pt;color:#414b45;margin:0 0 5mm;max-width:160mm}
-h2{font-size:13pt;margin:0 0 2mm;color:#236151}
-section{break-inside:avoid;margin-bottom:3mm;padding:3mm 5mm;border-radius:4mm;background:#f3f5ef}
+h2{font-size:13pt;margin:0 0 2mm;color:#0d4e9f}
+section{break-inside:avoid;margin-bottom:3mm;padding:3mm 5mm;border-radius:4mm;background:#f1f6fc}
 ul{margin:0;padding-left:5mm}
 li{margin:.6mm 0}
 .note{margin-top:4mm;padding:4mm 5mm;border-radius:4mm;background:#f6ead0;color:#5c3d06;font-weight:600}
@@ -143,12 +181,29 @@ li{margin:.6mm 0}
 .phones b{display:block;font-size:12pt}
 .blank{border-bottom:1px solid #9aa39b;height:6mm}
 .foot{margin-top:4mm;font-size:8.5pt;color:#8a918b}
+.page-break{break-after:page}
+.h2big{font-size:15pt;margin:0 0 3mm;color:#0f2742}
+.drugs{display:grid;grid-template-columns:1fr 1fr;gap:3mm;margin-bottom:5mm}
+.drug{break-inside:avoid;border:1px solid #d9e4f2;border-radius:4mm;padding:3mm 4mm;background:#f6f9fd}
+.drug__name{font-weight:700;font-size:11pt;color:#0d4e9f}
+.drug__what{color:#4a5b70;font-size:9.5pt;margin:.5mm 0 1.5mm}
+.drug__row{font-size:9.5pt;margin:.8mm 0}
+.drug__row--warn{color:#7a4a00}
+.drug__dose{display:grid;grid-template-columns:1fr 1fr;gap:3mm;margin-top:2mm;font-size:8.5pt;color:#8a96a5}
+.drug__dose span{border-bottom:1px solid #b9c6d6;padding-bottom:4mm}
+table.plan{width:100%;border-collapse:collapse;font-size:9.5pt;margin-bottom:3mm}
+table.plan th{background:#e8f0fb;color:#0d4e9f;text-align:left;padding:2mm}
+table.plan td{border-bottom:1px solid #d9e4f2;height:8mm}
+.sub{font-size:10pt;color:#414b45}
 </style></head><body>
-<div class="top"><svg class="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="20" fill="#2e7a68"/><path d="M9 33h11l5-11 7 20 5-13h18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>Памятка для родных</div>
+<div class="top"><svg class="logo" viewBox="0 0 64 64"><rect width="64" height="64" rx="20" fill="#1b6fd6"/><path d="M9 33h11l5-11 7 20 5-13h18" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>Памятка для родных</div>
 <h1>${esc(p.title)}</h1>
 <p class="lead">${esc(p.lead)}</p>
 ${p.scale ? scaleSvg() : ''}
 ${p.sections.map(([h, items]) => `<section><h2>${esc(h)}</h2><ul>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></section>`).join('')}
+${p.drugs ? `<div class="page-break"></div><h2 class="h2big">Ваши лекарства</h2><div class="drugs">${p.drugs.map(([n, what, how, warn]) => `<div class="drug"><div class="drug__name">${esc(n)}</div><div class="drug__what">${esc(what)}</div><div class="drug__row"><b>Как принимать:</b> ${esc(how)}</div><div class="drug__row drug__row--warn"><b>Важно:</b> ${esc(warn)}</div><div class="drug__dose"><span>Доза</span><span>Время приёма</span></div></div>`).join('')}</div>
+<h2 class="h2big">Мой лист приёма</h2><table class="plan"><tr><th>Лекарство</th><th>Доза</th><th>Утро</th><th>День</th><th>Вечер</th><th>Ночь</th></tr>${'<tr><td></td><td></td><td></td><td></td><td></td><td></td></tr>'.repeat(5)}</table>
+<p class="sub">Если боль прорвалась между приёмами, врач может назначить дополнительное быстрое лекарство: ____________________________</p>` : ''}
 <div class="note">${esc(p.note)}</div>
 <div class="phones">
 <div>Выездная служба<div class="blank"></div></div>
@@ -166,8 +221,8 @@ const tab = await browser.newPage();
 for (const p of PAMPHLETS) {
   await tab.setContent(page(p));
   await tab.evaluate(() => document.fonts.ready);
-  await tab.pdf({ path: `${out}/${p.id}.pdf`, format: 'A4', printBackground: true, preferCSSPageSize: true, scale: 0.92 });
+  await tab.pdf({ path: `${out}/${p.id}.pdf`, format: 'A4', printBackground: true, preferCSSPageSize: true, scale: p.drugs ? 1 : 0.92 });
 }
-writeFileSync(`${out}/list.json`, JSON.stringify(PAMPHLETS.map(({ id, title }) => ({ id, title }))));
+writeFileSync(`${out}/list.json`, JSON.stringify(PAMPHLETS.map(({ id, title, drugs }) => ({ id, title, pages: drugs ? 3 : 1 }))));
 await browser.close();
 console.log('ok', PAMPHLETS.length);

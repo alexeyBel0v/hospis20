@@ -2795,3 +2795,78 @@ body {
   background: var(--honey-soft);
   color: var(--honey-ink);
 }
+
+/* Осмотр медсестры */
+.exam-block {
+  gap: 14px;
+}
+
+.card__title--sm {
+  font-size: 17px;
+}
+
+.exam-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.input--sm {
+  min-height: 40px;
+  font-size: 15px;
+}
+
+.exam-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--field);
+  color: var(--ink);
+  text-align: left;
+}
+
+.exam-toggle--on {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.exam-toggle__box {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--faint);
+  border-radius: 7px;
+  color: #fff;
+  font-weight: 800;
+}
+
+.exam-toggle--on .exam-toggle__box {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.score {
+  margin-left: 6px;
+  color: var(--accent-ink);
+}
+
+/* Длинные варианты переносятся, а не растягивают экран */
+.chips--wrap .chip {
+  max-width: 100%;
+  height: auto;
+  min-height: 34px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+}
+
+.page {
+  overflow-x: hidden;
+}

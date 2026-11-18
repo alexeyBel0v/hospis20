@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { haptic, sharePdf } from '../lib/telegram.ts';
 import { DownloadIcon } from './icons.tsx';
 
-type Pamphlet = { id: string; title: string };
+type Pamphlet = { id: string; title: string; pages?: number };
 
 /** Памятки для родных: PDF, который можно переслать в Telegram, WhatsApp или распечатать. */
 export const Pamphlets = () => {
@@ -35,7 +35,7 @@ export const Pamphlets = () => {
           <button key={p.id} type="button" className="line" disabled={busy === p.id} onClick={() => void send(p)}>
             <span className="line__text">
               <span>{p.title}</span>
-              <span className="line__sub">PDF, одна страница</span>
+              <span className="line__sub">{p.pages && p.pages > 1 ? `PDF, ${p.pages} страницы` : 'PDF, одна страница'}</span>
             </span>
             <span className="round-btn" aria-hidden="true">
               <DownloadIcon width={18} height={18} />
