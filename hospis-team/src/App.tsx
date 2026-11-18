@@ -22,6 +22,7 @@ export const App = () => {
   const { data, isManager } = useData();
   const { news } = useContent();
   const [tab, setTab] = useState<Tab>('today');
+  const [newsView, setNewsView] = useState<'news' | 'info'>('news');
   const [stack, setStack] = useState<Screen[]>([]);
   const [update, setUpdate] = useState<string | null>(null);
   const top = stack[stack.length - 1];
@@ -70,15 +71,19 @@ export const App = () => {
     if (tab === 'patients') return <PatientsPage today={today} onOpenPatient={openPatient} onAddPatient={() => push({ kind: 'form', id: null })} />;
     if (tab === 'schedule') return <SchedulePage today={today} onOpenPatient={openPatient} />;
     if (tab === 'report' && isManager) return <ReportPage today={today} onOpenPatient={openPatient} />;
-    if (tab === 'news') return <NewsPage />;
+    if (tab === 'news') return <NewsPage key={newsView} initialView={newsView} />;
     return (
       <TodayPage
         today={today}
         onOpenPatient={openPatient}
         onAddPatient={() => push({ kind: 'form', id: null })}
         onOpenSettings={() => push({ kind: 'settings' })}
-        onOpenNews={() => setTab('news')}
         onOpenSchedule={() => setTab('schedule')}
+        onQuick={(target) => {
+          if (target === 'news' || target === 'info') setNewsView(target);
+          setTab(target === 'info' ? 'news' : target);
+          window.scrollTo(0, 0);
+        }}
       />
     );
   };
@@ -99,6 +104,7 @@ export const App = () => {
           newsBadge={newsBadge}
           manager={isManager}
           onChange={(next) => {
+            if (next === 'news') setNewsView('news');
             setTab(next);
             window.scrollTo(0, 0);
           }}

@@ -6,11 +6,18 @@ import { haptic } from '../lib/telegram.ts';
 import { cn } from '../lib/cn.ts';
 import { ChevronLeft, ChevronRight } from './icons.tsx';
 
-const SPLASH_MS = 1200;
+const SPLASH_MS = 1500;
+const FADE_MS = 320;
 
 export const Logo = ({ size = 72 }: { size?: number }) => (
   <svg className="logo" width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-    <rect width="64" height="64" rx="20" fill="var(--accent)" />
+    <defs>
+      <linearGradient id="lg" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#1b6fd6" />
+        <stop offset="1" stopColor="#19a7c9" />
+      </linearGradient>
+    </defs>
+    <rect width="64" height="64" rx="20" fill="url(#lg)" />
     <path className="logo__pulse" d="M9 33h11l5-11 7 20 5-13h18" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
   </svg>
 );
@@ -31,6 +38,7 @@ const initials = (name: string) =>
 /** Заставка → выбор сотрудника → его пароль → приложение. Выход возвращает к выбору сотрудника. */
 export const Gate = ({ children }: { children: (onLogout: () => void) => ReactNode }) => {
   const [phase, setPhase] = useState<'splash' | 'pick' | 'open'>('splash');
+  const [leaving, setLeaving] = useState(false);
   const [staff, setStaff] = useState<Staff[] | null>(null);
   const [loadError, setLoadError] = useState('');
   const [chosen, setChosen] = useState<Staff | null>(null);
@@ -49,9 +57,13 @@ export const Gate = ({ children }: { children: (onLogout: () => void) => ReactNo
 
   useEffect(() => {
     const signedIn = Boolean(getSession());
-    const t = window.setTimeout(() => setPhase(signedIn ? 'open' : 'pick'), signedIn ? 500 : SPLASH_MS);
+    const fade = window.setTimeout(() => setLeaving(true), SPLASH_MS);
+    const t = window.setTimeout(() => setPhase(signedIn ? 'open' : 'pick'), SPLASH_MS + FADE_MS);
     if (!signedIn) loadStaff();
-    return () => window.clearTimeout(t);
+    return () => {
+      window.clearTimeout(fade);
+      window.clearTimeout(t);
+    };
   }, []);
 
   useEffect(() => {
@@ -85,12 +97,34 @@ export const Gate = ({ children }: { children: (onLogout: () => void) => ReactNo
 
   if (phase === 'open') return <>{children(onLogout)}</>;
 
+  if (phase === 'splash') {
+    return (
+      <div className={cn('splash', leaving && 'splash--out')} role="status" aria-label="Загрузка Hospis OS">
+        <div className="splash__core">
+          <div className="splash__mark">
+            <span className="splash__ring" />
+            <span className="splash__ring" />
+            <div className="splash__tile">
+              <svg width="64" height="64" viewBox="0 0 64 64" aria-hidden="true">
+                <path className="splash__pulse" d="M6 33h12l5-11 7 20 5-13h23" />
+              </svg>
+            </div>
+          </div>
+          <p className="splash__name">Hospis OS</p>
+          <p className="splash__tag">выездная паллиативная служба</p>
+          <div className="splash__bar">
+            <span />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <main className="gate">
-      <div className={cn('gate__brand', phase === 'pick' && 'gate__brand--up')}>
-        <Logo size={phase === 'pick' ? 56 : 84} />
+      <div className="gate__brand gate__brand--up">
+        <Logo size={56} />
         <p className="gate__name">Hospis OS</p>
-        {phase === 'splash' && <span className="gate__bar" aria-label="Загрузка" />}
       </div>
 
       {phase === 'pick' && !chosen && (

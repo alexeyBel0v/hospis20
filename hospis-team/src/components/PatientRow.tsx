@@ -81,11 +81,13 @@ type Props = {
   tone?: 'default' | 'muted';
   /** Показать в раскрытой строке кнопку «Был» за этот день. */
   visitDate?: IsoDate;
+  /** Уже был сегодня — отметка на линии плана. */
+  done?: boolean;
 };
 
 /** Строка «Фамилия И. О.» + полис. Нажатие раскрывает адрес, телефоны и комментарий. */
-export const PatientRow = ({ patient, today, open, onToggle, onOpen, aside, tone = 'default', visitDate }: Props) => (
-  <div className={cn('prow', open && 'prow--open', tone === 'muted' && 'prow--muted')}>
+export const PatientRow = ({ patient, today, open, onToggle, onOpen, aside, tone = 'default', visitDate, done }: Props) => (
+  <div className={cn('prow', open && 'prow--open', tone === 'muted' && 'prow--muted', done && 'prow--done')}>
     <button
       type="button"
       className="prow__head"

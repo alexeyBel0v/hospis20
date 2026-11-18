@@ -10,10 +10,10 @@ import { Pamphlets } from '../components/Pamphlets.tsx';
 
 type View = 'news' | 'info';
 
-export const NewsPage = () => {
+export const NewsPage = ({ initialView = 'news' }: { initialView?: View }) => {
   const { news, info, status, reload } = useContent();
   const { data, update } = useData();
-  const [view, setView] = useState<View>('news');
+  const [view, setView] = useState<View>(initialView);
   const [openInfo, setOpenInfo] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const q = query.trim().toLowerCase();
