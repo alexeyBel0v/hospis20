@@ -13,6 +13,7 @@ import { ChevronLeft, HospitalIcon, NavIcon, PencilIcon, PhoneIcon } from '../co
 import { Sheet } from '../components/ui.tsx';
 import { VisitButton } from '../components/VisitButton.tsx';
 import { Pamphlets } from '../components/Pamphlets.tsx';
+import { WoundSheet } from '../components/WoundSheet.tsx';
 import { roleName, shortName } from '../lib/format.ts';
 
 type Props = { patientId: string; today: IsoDate; onBack: () => void; onEdit: (id: string) => void };
@@ -65,6 +66,7 @@ export const PatientPage = ({ patientId, today, onBack, onEdit }: Props) => {
   const { data, update, users, isManager } = useData();
   const [hospitalOpen, setHospitalOpen] = useState(false);
   const [pamphletsOpen, setPamphletsOpen] = useState(false);
+  const [woundOpen, setWoundOpen] = useState(false);
   const patient = data.patients.find((p) => p.id === patientId);
 
   if (!patient) {
@@ -239,6 +241,9 @@ export const PatientPage = ({ patientId, today, onBack, onEdit }: Props) => {
         <button type="button" className="btn btn--soft" onClick={() => update((d) => setArchived(d, patient.id, !patient.archived))}>
           {patient.archived ? 'Вернуть из архива' : 'В архив'}
         </button>
+        <button type="button" className="btn btn--soft" onClick={() => setWoundOpen(true)}>
+          Status localis
+        </button>
         <button type="button" className="btn btn--soft" onClick={() => setPamphletsOpen(true)}>
           Памятки для родных
         </button>
@@ -249,6 +254,7 @@ export const PatientPage = ({ patientId, today, onBack, onEdit }: Props) => {
         )}
       </div>
 
+      {woundOpen && <WoundSheet patient={patient} today={today} onClose={() => setWoundOpen(false)} />}
       {pamphletsOpen && (
         <Sheet title="Памятки для родных" onClose={() => setPamphletsOpen(false)}>
           <Pamphlets />

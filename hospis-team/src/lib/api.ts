@@ -108,3 +108,5 @@ export type AiPatient = {
 
 export const askAiPatient = (input: { text: string; image: string | null; today: string; weekday: string }) =>
   request<{ patients: AiPatient[]; model: string }>('ai/patient', { method: 'POST', body: input });
+
+export const askAiWound = (text: string) => request<{ wound: Record<string, unknown>; model: string }>('ai/wound', { method: 'POST', body: { text } });

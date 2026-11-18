@@ -270,9 +270,14 @@ const AI_PROMPT = (today: string, weekday: string) => `Ты помощник в�
 {"patients":[{"fullName":"Фамилия Имя Отчество","policy":"16 цифр полиса или пусто","address":"Москва, улица, дом (корпус/строение)","apartment":"","entrance":"","floor":"","intercom":"","phones":[{"number":"","who":"кем приходится: пациент, дочь, сын..."}],"everyDays":число дней между визитами (ежедневно=1, раз в 3 дня=3, 1/3=3, раз в неделю=7) или null,"start":"YYYY-MM-DD первый визит или null","comment":"всё остальное важное коротко"}]}
 Если поле не указано — пустая строка или null. Не выдумывай данные. Если город не указан — считай, что это Москва.`;
 
+const WOUND_PROMPT = `Ты помогаешь медсестре выездной паллиативной службы оформить status localis раны. Из её короткой записи извлеки параметры.
+НЕ ВЫДУМЫВАЙ: если параметр не назван — null. Не меняй стадию, которую назвала медсестра.
+Ответь ТОЛЬКО JSON без пояснений:
+{"kind":"пролежень|трофическая язва|послеоперационная рана|опухолевая язва|другая рана","stage":"1|2|3|4|неклассифицируемая|глубокое повреждение тканей|null","location":"область тела по-русски в родительном падеже, напр. крестца, левой пятки, правого большого вертела","length":число см или null,"width":число см или null,"depth":число см или null,"granulation":процент или null,"fibrin":процент или null,"necrosis":процент или null,"necrosisType":"сухой (струп)|влажный|null","exudateAmount":"нет|скудное|умеренное|обильное|null","exudateType":"серозное|серозно-геморрагическое|геморрагическое|гнойное|null","odor":true|false|null,"edges":["ровные","неровные","подрытые","мацерированные","с краевой эпителизацией","гиперкератоз"] только названные,"skin":["без изменений","гиперемия","отёк","мацерация","уплотнение","повышение местной температуры"] только названные,"hyperemiaCm":число или null,"tunneling":"описание карманов/ходов или null","pain":число 0-10 или null,"dressing":"чем обработано/закрыто или null"}`;
+
 type AiResult = { ok: true; patients: unknown[]; model: string } | { ok: false; error: string };
 
-const askAi = async (text: string, image: string | null, today: string, weekday: string): Promise<AiResult> => {
+const askAi = async (text: string, image: string | null, today: string, weekday: string, prompt = AI_PROMPT(today, weekday), key2 = 'patients'): Promise<AiResult> => {
   const key = process.env.OPENROUTER_API_KEY;
   if (!key) return { ok: false, error: 'ИИ не подключён' };
   const dynamic = await listFreeVision();
@@ -285,7 +290,7 @@ const askAi = async (text: string, image: string | null, today: string, weekday:
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json', 'x-title': 'Hospis OS' },
-        body: JSON.stringify({ model, temperature: 0, messages: [{ role: 'system', content: AI_PROMPT(today, weekday) }, { role: 'user', content }] }),
+        body: JSON.stringify({ model, temperature: 0, messages: [{ role: 'system', content: prompt }, { role: 'user', content }] }),
         signal: AbortSignal.timeout(40_000),
       });
       if (!res.ok) {
@@ -295,7 +300,8 @@ const askAi = async (text: string, image: string | null, today: string, weekday:
       const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
       const raw = data.choices?.[0]?.message?.content ?? '';
       const jsonText = raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
-      const parsed = JSON.parse(jsonText) as { patients?: unknown[] };
+      const parsed = JSON.parse(jsonText) as Record<string, unknown>;
+      if (key2 === 'wound') return { ok: true, patients: [parsed], model };
       if (Array.isArray(parsed.patients)) return { ok: true, patients: parsed.patients.slice(0, 40), model };
     } catch {
       // следующая модель
@@ -429,6 +435,17 @@ export const handle = async (req: Request): Promise<Response> => {
       if (image && image.length > 3_500_000) return fail('Фото слишком большое', 400);
       const result = await askAi(text, image, String(input.today ?? ''), String(input.weekday ?? ''));
       return result.ok ? json({ patients: result.patients, model: result.model }) : fail(result.error, 502);
+    }
+
+    // ИИ: короткая запись о ране → параметры для status localis. Текст собирает приложение по шаблону.
+    if (route === 'ai/wound' && req.method === 'POST') {
+      const pre = await readDb();
+      if (!currentUser(pre, req)) return fail('Нужно войти заново', 401);
+      const { text } = await body<{ text?: string }>(req);
+      const note = String(text ?? '').slice(0, 2000);
+      if (!note.trim()) return fail('Опишите рану', 400);
+      const result = await askAi(note, null, '', '', WOUND_PROMPT, 'wound');
+      return result.ok ? json({ wound: result.patients[0], model: result.model }) : fail(result.error, 502);
     }
 
     return fail('Не найдено', 404);
