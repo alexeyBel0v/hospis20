@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import type { CatheterType, IsoDate, PatientInput, Schedule } from '../types.ts';
 import { useData } from '../hooks/useData.tsx';
+import { AiSheet } from '../components/AiSheet.tsx';
 import { addressWarning, splitApartment } from '../lib/address.ts';
 import { cn } from '../lib/cn.ts';
 import { addDays, formatDayShort, isIsoDate } from '../lib/dates.ts';
@@ -28,6 +29,8 @@ export const PatientFormPage = ({ patientId, today, onDone, onCancel }: Props) =
   });
   const [newDate, setNewDate] = useState(today);
   const [tried, setTried] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [aiNote, setAiNote] = useState('');
 
   const set = <K extends keyof PatientInput>(key: K, value: PatientInput[K]) => setForm((f) => ({ ...f, [key]: value }));
   const setSchedule = (schedule: Schedule) => set('schedule', schedule);
@@ -78,6 +81,31 @@ export const PatientFormPage = ({ patientId, today, onDone, onCancel }: Props) =
         </button>
       </div>
       <h1 className="h1">{existing ? 'Изменить' : 'Новый пациент'}</h1>
+
+      {!existing && (
+        <button type="button" className="ai-btn" onClick={() => setAiOpen(true)}>
+          <span className="ai-btn__icon" aria-hidden="true">✦</span>
+          <span className="ai-btn__text">
+            <b>Заполнить с ИИ</b>
+            <span>По фото листа или по тексту</span>
+          </span>
+        </button>
+      )}
+      {aiNote && <p className="banner-note">{aiNote}</p>}
+      {aiOpen && (
+        <AiSheet
+          today={today}
+          current={form}
+          onFill={(input) => {
+            setForm(input);
+            setAiNote('ИИ заполнил поля — проверьте всё и нажмите «Сохранить».');
+          }}
+          onAddedMany={(count) => {
+            setAiNote(`Добавлено пациентов: ${count}. Проверьте их карточки в разделе «Пациенты».`);
+          }}
+          onClose={() => setAiOpen(false)}
+        />
+      )}
 
       <form className="form" onSubmit={submit} noValidate>
         <section className="form-block">

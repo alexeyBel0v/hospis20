@@ -90,3 +90,21 @@ export const pushChanges = (changes: SyncChanges) => request<ServerView>('sync',
 
 export type StaffInput = { id?: string; name?: string; role?: Staff['role']; password?: string; active?: boolean };
 export const saveStaff = (input: StaffInput) => request<ServerView>('users', { method: 'POST', body: input });
+
+/** Черновик пациента от ИИ — как он его понял. Всё проверяет человек. */
+export type AiPatient = {
+  fullName?: string;
+  policy?: string;
+  address?: string;
+  apartment?: string;
+  entrance?: string;
+  floor?: string;
+  intercom?: string;
+  phones?: Array<{ number?: string; who?: string }>;
+  everyDays?: number | null;
+  start?: string | null;
+  comment?: string;
+};
+
+export const askAiPatient = (input: { text: string; image: string | null; today: string; weekday: string }) =>
+  request<{ patients: AiPatient[]; model: string }>('ai/patient', { method: 'POST', body: input });

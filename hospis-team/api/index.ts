@@ -91,7 +91,7 @@ const readToken = (header: string | null): string | null => {
   const token = header?.replace(/^Bearer\s+/i, '') ?? '';
   const parts = token.split('.');
   if (parts.length !== 3) return null;
-  const [userId, exp, sig] = parts;
+  const [userId = '', exp = '', sig = ''] = parts;
   const want = sign(`${userId}.${exp}`);
   if (sig.length !== want.length || !timingSafeEqual(Buffer.from(sig), Buffer.from(want))) return null;
   if (Number(exp) < Date.now()) return null;
@@ -244,6 +244,66 @@ const applySync = (db: Db, me: User, body: SyncBody) => {
   }
 };
 
+// ---------- ИИ (OpenRouter, бесплатные модели) ----------
+
+/** Сначала проверенные модели; если все заняты — любая бесплатная, которая понимает картинки. */
+const PREFERRED = ['nvidia/nemotron-3.5-super-vl:free', 'google/gemma-4-31b-it:free', 'google/gemma-4-26b-a4b-it:free', 'inclusionai/ling-3.2-flash:free'];
+
+let freeModels: { at: number; ids: string[] } | null = null;
+
+const listFreeVision = async (): Promise<string[]> => {
+  if (freeModels && Date.now() - freeModels.at < 3_600_000) return freeModels.ids;
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/models');
+    const body = (await res.json()) as { data?: Array<{ id: string; architecture?: { input_modalities?: string[] } }> };
+    const ids = (body.data ?? []).filter((m) => m.id.endsWith(':free') && m.architecture?.input_modalities?.includes('image')).map((m) => m.id);
+    freeModels = { at: Date.now(), ids };
+    return ids;
+  } catch {
+    return [];
+  }
+};
+
+const AI_PROMPT = (today: string, weekday: string) => `Ты помощник выездной паллиативной службы в Москве. Из фото (чек-лист, список, направление) или текста извлеки пациентов.
+Сегодня ${today} (${weekday}). Относительные даты («с пятницы», «завтра») переводи в YYYY-MM-DD.
+Ответь ТОЛЬКО JSON без пояснений и без markdown:
+{"patients":[{"fullName":"Фамилия Имя Отчество","policy":"16 цифр полиса или пусто","address":"Москва, улица, дом (корпус/строение)","apartment":"","entrance":"","floor":"","intercom":"","phones":[{"number":"","who":"кем приходится: пациент, дочь, сын..."}],"everyDays":число дней между визитами (ежедневно=1, раз в 3 дня=3, 1/3=3, раз в неделю=7) или null,"start":"YYYY-MM-DD первый визит или null","comment":"всё остальное важное коротко"}]}
+Если поле не указано — пустая строка или null. Не выдумывай данные. Если город не указан — считай, что это Москва.`;
+
+type AiResult = { ok: true; patients: unknown[]; model: string } | { ok: false; error: string };
+
+const askAi = async (text: string, image: string | null, today: string, weekday: string): Promise<AiResult> => {
+  const key = process.env.OPENROUTER_API_KEY;
+  if (!key) return { ok: false, error: 'ИИ не подключён' };
+  const dynamic = await listFreeVision();
+  const models = [...new Set([...PREFERRED, ...dynamic])].slice(0, 6);
+  const content: unknown[] = [{ type: 'text', text: text.trim() || 'Извлеки пациентов с фото.' }];
+  if (image) content.push({ type: 'image_url', image_url: { url: image } });
+  let lastError = 'ИИ сейчас занят, попробуйте через минуту';
+  for (const model of models) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json', 'x-title': 'Hospis OS' },
+        body: JSON.stringify({ model, temperature: 0, messages: [{ role: 'system', content: AI_PROMPT(today, weekday) }, { role: 'user', content }] }),
+        signal: AbortSignal.timeout(40_000),
+      });
+      if (!res.ok) {
+        if (res.status === 429) lastError = 'Бесплатный лимит ИИ на сегодня исчерпан или модели заняты, попробуйте позже';
+        continue;
+      }
+      const data = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
+      const raw = data.choices?.[0]?.message?.content ?? '';
+      const jsonText = raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
+      const parsed = JSON.parse(jsonText) as { patients?: unknown[] };
+      if (Array.isArray(parsed.patients)) return { ok: true, patients: parsed.patients.slice(0, 40), model };
+    } catch {
+      // следующая модель
+    }
+  }
+  return { ok: false, error: lastError };
+};
+
 // ---------- HTTP ----------
 
 const json = (body: unknown, status = 200) =>
@@ -356,6 +416,19 @@ export const handle = async (req: Request): Promise<Response> => {
       if (error) return fail(error, 400);
       const db = await readDb();
       return json(view(db, currentUser(db, req) as User));
+    }
+
+    // ИИ: разобрать фото или текст в поля карточки пациента. Ничего не сохраняет — только возвращает черновик.
+    if (route === 'ai/patient' && req.method === 'POST') {
+      const pre = await readDb();
+      if (!currentUser(pre, req)) return fail('Нужно войти заново', 401);
+      const input = await body<{ text?: string; image?: string; today?: string; weekday?: string }>(req);
+      const text = String(input.text ?? '').slice(0, 4000);
+      const image = typeof input.image === 'string' && input.image.startsWith('data:image/') ? input.image : null;
+      if (!text.trim() && !image) return fail('Добавьте фото или текст', 400);
+      if (image && image.length > 3_500_000) return fail('Фото слишком большое', 400);
+      const result = await askAi(text, image, String(input.today ?? ''), String(input.weekday ?? ''));
+      return result.ok ? json({ patients: result.patients, model: result.model }) : fail(result.error, 502);
     }
 
     return fail('Не найдено', 404);
